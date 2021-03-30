@@ -3,51 +3,60 @@ import Layout, { Header } from "antd/lib/layout/layout";
 import { Button, message, Space, Typography, Upload } from "antd";
 import React, { useEffect, useRef, useState } from "react";
 import { Canvas, MeshProps, useFrame } from "react-three-fiber";
-import Piano, { Tone, ToneName } from "./components/Piano";
+import Piano from "./components/Piano";
 import Modal from "antd/lib/modal/Modal";
 import { InboxOutlined } from "@ant-design/icons";
 import { UploadFile } from "antd/lib/upload/interface";
 import * as MidiPlayer from "midi-player-js";
+import { MIDINoteToTone, Note, RawNote } from "./utils/note";
+import Notes from "./components/Notes";
+import { ToneName } from "./utils/tone";
+import Boxes from "./components/Boxes";
 
-const MIDINoteToTone = (note: number): Tone => {
-  const ind = note - 12;
-  return {
-    octave: Math.floor(ind / 12),
-    tone: ind as ToneName,
-  };
+const startNatural = {
+  octave: 0,
+  tone: ToneName.A,
+};
+const endNatural = {
+  octave: 8,
+  tone: ToneName.C,
 };
 
 function App() {
-  const [loaded, setLoaded] = useState(false);
   const [pressedList, setPressedList] = useState<boolean[] | null>(null);
   const [file, setFile] = useState<UploadFile | null>(null);
   const [modalVisible, setModalVisible] = useState(true);
-  const [MIDIMessage, setMIDIMessage] = useState("");
-
-  useEffect(() => {}, []);
+  const [notes, setNotes] = useState<Note[] | null>(null);
 
   return (
     <div className="App">
       <Modal
         visible={modalVisible}
-        closable={false}
-        title="MIDI 파일 업로드"
-        footer={[
-          <Button
-            type="primary"
-            disabled={file === null}
-            key="ok"
-            onClick={() => {
-              message.success("파일 로드 성공");
-              setModalVisible(false);
-            }}
-          >
-            확인
-          </Button>,
-        ]}
+        title="MIDI 데이터 파일 업로드"
+        onOk={async () => {
+          message.info("파일 로드 시작");
+          if (file === null) {
+            message.error("업로드 완료 후 버튼을 눌러주세요.");
+            return;
+          }
+          setModalVisible(false);
+          const text = await file.originFileObj.text();
+          const raws: RawNote[] = JSON.parse(text);
+          setNotes(
+            raws.map((r) => ({
+              tone: MIDINoteToTone(r.midiId),
+              start: r.start,
+              end: r.end,
+            }))
+          );
+          message.success("파일 로드 성공");
+        }}
+        onCancel={() => {
+          setModalVisible(false);
+        }}
       >
         <Space direction="vertical" size={8} style={{ width: "100%" }}>
-          <Typography.Text>미디 파일을 업로드해주세요.</Typography.Text>
+          <Typography.Text>데이터 파일을 업로드해주세요.</Typography.Text>
           <Upload.Dragger
             name="file"
             multiple={false}
@@ -65,7 +74,7 @@ function App() {
             <p className="ant-upload-text">
               클릭하거나 파일을 드래그해서 업로드
             </p>
-            <p className="ant-upload-hint">1개의 MIDI 파일을 업로드해주세요.</p>
+            <p className="ant-upload-hint">1개의 JSON 파일을 업로드해주세요.</p>
           </Upload.Dragger>
           <Typography.Text>
             업로드 완료 후 확인 버튼을 눌러주세요.
@@ -119,24 +128,11 @@ function App() {
           </div>
         </Header>
         <div className="Render">
-          <Typography.Text
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-            }}
-          >
-            {MIDIMessage}
-          </Typography.Text>
           <Canvas
-            concurrent
-            invalidateFrameloop
-            shadowMap
+            gl={{ antialias: true, alpha: false }}
             camera={{ position: [0, -4, 3.5], fov: 70, near: 2, far: 120 }}
-            gl={{ alpha: false }}
           >
             <color attach="background" args={["white"]} />
-            <fog attach="fog" args={["white", 20, 40]} />
             <ambientLight />
             <spotLight
               castShadow
@@ -157,16 +153,19 @@ function App() {
             </mesh>
             <Piano
               width={10}
-              startNatural={{
-                octave: 0,
-                tone: ToneName.A,
-              }}
-              endNatural={{
-                octave: 8,
-                tone: ToneName.C,
-              }}
-              groupProps={{ position: [0, -1.3, 0] }}
+              startNatural={startNatural}
+              endNatural={endNatural}
+              groupProps={{ position: [0, -1.3, 0.3] }}
             ></Piano>
+            {notes !== null && (
+              <Notes
+                width={10}
+                startNatural={startNatural}
+                endNatural={endNatural}
+                velocity={1.8}
+                notes={notes}
+              ></Notes>
+            )}
           </Canvas>
         </div>
       </Layout>
