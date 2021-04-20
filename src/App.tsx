@@ -7,11 +7,12 @@ import Piano from "./components/Piano";
 import Modal from "antd/lib/modal/Modal";
 import { InboxOutlined } from "@ant-design/icons";
 import { UploadFile } from "antd/lib/upload/interface";
-import * as MidiPlayer from "midi-player-js";
 import { MIDINoteToTone, Note, RawNote } from "./utils/note";
 import Notes from "./components/Notes";
 import { ToneName } from "./utils/tone";
 import Boxes from "./components/Boxes";
+import MidiFile from "midi-file";
+import { Parsed } from "./midiType";
 
 const startNatural = {
   octave: 0,
@@ -21,6 +22,13 @@ const endNatural = {
   octave: 8,
   tone: ToneName.C,
 };
+
+function parseRaws(buffer: Uint8Array): RawNote[]
+{
+  const parsed = MidiFile.parseMidi(buffer) as Parsed;
+  console.log('parsed', parsed);
+  return [];
+}
 
 function App() {
   const [pressedList, setPressedList] = useState<boolean[] | null>(null);
@@ -32,23 +40,30 @@ function App() {
     <div className="App">
       <Modal
         visible={modalVisible}
-        title="MIDI 데이터 파일 업로드"
+        title="MIDI 파일 업로드"
         onOk={async () => {
           message.info("파일 로드 시작");
           if (file === null) {
             message.error("업로드 완료 후 버튼을 눌러주세요.");
             return;
           }
-          setModalVisible(false);
-          const text = await file.originFileObj.text();
-          const raws: RawNote[] = JSON.parse(text);
-          setNotes(
-            raws.map((r) => ({
-              tone: MIDINoteToTone(r.midiId),
-              start: r.start,
-              end: r.end,
-            }))
-          );
+          try {
+            setModalVisible(false);
+            const buffer = await file.originFileObj.arrayBuffer();
+            const raws: RawNote[] = parseRaws(new Uint8Array(buffer));
+            setNotes(
+              raws.map((r) => ({
+                tone: MIDINoteToTone(r.midiId),
+                start: r.start,
+                end: r.end,
+              }))
+            );  
+          }
+          catch {
+            message.error("파일 로드 실패");
+            setFile(null);
+            return;
+          }
           message.success("파일 로드 성공");
         }}
         onCancel={() => {
@@ -56,7 +71,7 @@ function App() {
         }}
       >
         <Space direction="vertical" size={8} style={{ width: "100%" }}>
-          <Typography.Text>데이터 파일을 업로드해주세요.</Typography.Text>
+          <Typography.Text>MIDI 파일을 업로드해주세요.</Typography.Text>
           <Upload.Dragger
             name="file"
             multiple={false}
@@ -74,7 +89,7 @@ function App() {
             <p className="ant-upload-text">
               클릭하거나 파일을 드래그해서 업로드
             </p>
-            <p className="ant-upload-hint">1개의 JSON 파일을 업로드해주세요.</p>
+            <p className="ant-upload-hint">1개의 MIDI 파일을 업로드해주세요.</p>
           </Upload.Dragger>
           <Typography.Text>
             업로드 완료 후 확인 버튼을 눌러주세요.

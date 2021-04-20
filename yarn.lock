@@ -7404,6 +7404,11 @@ micromatch@^4.0.2:
     braces "^3.0.1"
     picomatch "^2.0.5"
 
+midi-file@^1.1.2:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/midi-file/-/midi-file-1.1.2.tgz#57fafe2dcb605ef29f06652ac45e7a475873dc77"
+  integrity sha512-VQNzirfADDFXTymgPJv2VfLylCq14spRNFhpA6u7dLqPMbw1BqGf5u9B0k7z++8X1RMs57pyn+G4kzhyIatlyw==
+
 midi-player-js@^2.0.13:
   version "2.0.13"
   resolved "https://registry.yarnpkg.com/midi-player-js/-/midi-player-js-2.0.13.tgz#e955c76ca55eedc8adbf3f2a97a3b00c9c669834"

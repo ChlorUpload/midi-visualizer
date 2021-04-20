@@ -14,6 +14,7 @@
     "@types/styled-components": "^5.1.9",
     "antd": "^4.14.1",
     "immer": "^9.0.1",
+    "midi-file": "^1.1.2",
     "midi-player-js": "^2.0.13",
     "midi-sounds-react": "^1.2.54",
     "react": "^17.0.2",
