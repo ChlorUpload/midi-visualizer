@@ -23,11 +23,66 @@ const endNatural = {
   tone: ToneName.C,
 };
 
-function parseRaws(buffer: Uint8Array): RawNote[]
-{
+function parseRaws(buffer: Uint8Array): RawNote[] {
   const parsed = MidiFile.parseMidi(buffer) as Parsed;
-  console.log('parsed', parsed);
-  return [];
+  console.log("parsed", parsed);
+
+  const tpb = parsed.header.ticksPerBeat;
+
+  let noteMap = {};
+  let rawNotes: RawNote[] = [];
+  let millisecForBeat = 0;
+
+  parsed.tracks.forEach((t) => {
+    let millisec = 0;
+    t.forEach((e) => {
+      let state = null;
+      let note = 0;
+
+      switch (e.type) {
+        case "setTempo":
+          millisecForBeat = e.microsecondsPerBeat / 1000;
+          return;
+        case "noteOn":
+        case "noteOff":
+          millisec += e.deltaTime * millisecForBeat / tpb;
+
+          if (e.velocity !== undefined) state = e.velocity > 0;
+          if (e.type === "noteOff") state = false;
+
+          note = e.noteNumber;
+          if(noteMap[note] === undefined) {
+            noteMap[note] = {
+              state: false,
+              start: 0,
+            };
+          }
+
+          if (state) {
+            noteMap[note].start = millisec;
+          }
+
+          if (
+            state === false &&
+            noteMap[note] !== undefined &&
+            noteMap[note].state
+          ) {
+            rawNotes.push({
+              midiId: note,
+              start: noteMap[note].start,
+              end: millisec,
+            });
+          }
+
+          noteMap[note].state = state;
+          return;
+      }
+    });
+  });
+
+  console.log(noteMap, rawNotes);
+
+  return rawNotes;
 }
 
 function App() {
@@ -57,9 +112,8 @@ function App() {
                 start: r.start,
                 end: r.end,
               }))
-            );  
-          }
-          catch {
+            );
+          } catch {
             message.error("파일 로드 실패");
             setFile(null);
             return;
