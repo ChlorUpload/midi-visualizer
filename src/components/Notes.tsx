@@ -67,7 +67,7 @@ export default function Notes({
     const ind = currentInd - startInd;
 
     const yLen = ((note.end - note.start) / 1000) * velocity;
-    const posY = ((note.end + note.start - time) / 2000) * velocity;
+    const posY = ((note.end + note.start - 2 * time) / 2000) * velocity;
 
     if (isNaturalTone(tone)) {
       return {
