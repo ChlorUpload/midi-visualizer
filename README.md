@@ -1,6 +1,6 @@
 # Spiral Score
 
-d1rp9xcjv7tof.cloudfront.net
+see in https://d1rp9xcjv7tof.cloudfront.net
 
 
 # Getting Started with Create React App
